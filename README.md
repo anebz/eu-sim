@@ -1,5 +1,7 @@
 # eu-sim
 
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/yourGitHubName/yourRepo/yourApp/)
+
 https://github.com/plotly/plotly.py/issues/2582
 https://discuss.streamlit.io/t/plotly-in-streamlit/1319/4
 https://discuss.streamlit.io/t/plotly-in-streamlit/1319/4
@@ -13,3 +15,10 @@ https://github.com/flairNLP/flair/blob/master/resources/docs/TUTORIAL_5_DOCUMENT
 plotly.tools.make_subplots is deprecated, please use plotly.subplots.make_subplots instead
 
 iplot only inside notebook
+
+https://docs.streamlit.io/en/latest/api.html#streamlit.selectbox
+https://discuss.streamlit.io/t/best-way-to-let-users-select-options/1058
+
+
+apex: c++ build tools
+https://visualstudio.microsoft.com/visual-cpp-build-tools/
