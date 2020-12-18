@@ -1,0 +1,7 @@
+allennlp==0.9.0
+flair
+numpy==1.15.2
+plotly
+streamlit
+transformers==3.5.0
+torch
