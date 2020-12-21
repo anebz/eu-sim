@@ -1,43 +1,63 @@
-from flair.data import Sentence
-from flair.embeddings import DocumentPoolEmbeddings, TransformerDocumentEmbeddings, FlairEmbeddings, ELMoEmbeddings, TransformerWordEmbeddings
-
-import plotly
-import plotly.graph_objs as go
-from plotly.offline import download_plotlyjs, plot, iplot
-
 import torch
 import pandas as pd
 import streamlit as st
+from google_trans_new import google_translator
+from flair.data import Sentence
+from flair.embeddings import DocumentPoolEmbeddings, TransformerDocumentEmbeddings
+from flair.embeddings import WordEmbeddings, FlairEmbeddings, ELMoEmbeddings
+
+# available languages and supported embedding names
+av_languages = {'English': {'word':'glove', 'flair':'mix', 'elmo':'', 'bert':'bert-base-uncased'},
+                'Spanish': {'word':'es', 'flair':'es', 'bert':'bert-base-multilingual-uncased'},
+                'Portuguese': {'word':'pt', 'flair':'pt', 'elmo':'pt', 'bert':'bert-base-multilingual-uncased'},
+                'Italian': {'word':'it', 'flair':'it', 'bert':'bert-base-multilingual-uncased'},
+                'French': {'word':'fr', 'flair':'fr', 'bert':'bert-base-multilingual-uncased'},
+                'German': {'word':'de', 'flair':'de', 'bert':'bert-base-german-dbmdz-uncased'},
+                'Japanese': {'word':'ja', 'flair':'ja', 'bert':'cl-tohoku/bert-base-japanese'},
+                'Chinese': {'word':'zh', 'bert':'bert-base-chinese'},
+                'Basque': {'word':'eu', 'flair':'eu', 'elmo':["https://schweter.eu/cloud/eu-elmo/options.json",
+                            "https://schweter.eu/cloud/eu-elmo/weights.hdf5"], 'bert':'bert-base-multilingual-uncased'}
+               }
+
+# example gold and similar sentences
+example_sentences = ["The doctor invited the patient for lunch",
+                    "the surgeon invited the patient for lunch", 
+                    "the doctor invited the doctor for lunch",
+                    "the professor invited the patient for lunch",
+                    "the doctor invited the patient for a meal",
+                    "the doctor took the patient out for tea",
+                    "the doctor paid for the patient's lunch",
+                    "the park was empty at this time of night",
+                    "a complete random sentence with two cups of sugar"]
 
 
 @st.cache
-def load_flair_embeddings():
-    flair_emb = [(DocumentPoolEmbeddings([FlairEmbeddings("eu-forward"), FlairEmbeddings("eu-backward")]),
-                DocumentPoolEmbeddings([FlairEmbeddings('mix-forward'), FlairEmbeddings('mix-backward')]))]
-    return flair_emb
+def load_word_embeddings(ename):
+    return DocumentPoolEmbeddings([WordEmbeddings(ename)])
 
 @st.cache
-def load_bert_cased_embeddings():
-    # See BERT paper, section 5.3 and table 7
-    bert_layers = '-1,-2,-3,-4'
-    bert_cased_emb = [TransformerDocumentEmbeddings('bert-base-multilingual-cased', layers=bert_layers),
-                TransformerDocumentEmbeddings('bert-base-cased', layers=bert_layers)]
-    return bert_cased_emb
+def load_flair_embeddings(ename):
+    return DocumentPoolEmbeddings([FlairEmbeddings(f'{ename}-forward'), FlairEmbeddings(f'{ename}-backward')])
 
 @st.cache
-def load_bert_uncased_embeddings():
-    # See BERT paper, section 5.3 and table 7
-    bert_layers = '-1,-2,-3,-4'
-    bert_uncased_emb = [TransformerDocumentEmbeddings('bert-base-multilingual-uncased', layers=bert_layers),
-                TransformerDocumentEmbeddings('bert-base-uncased', layers=bert_layers)]
-    return bert_uncased_emb
+def load_bert_embeddings(ename):
+    # See BERT paper, section 5.3 and table 7 for layers
+    return TransformerDocumentEmbeddings(ename, layers='-1,-2,-3,-4')
 
 @st.cache
-def load_elmo_embeddings():
-    elmo_emb = [(DocumentPoolEmbeddings([ELMoEmbeddings(options_file="https://schweter.eu/cloud/eu-elmo/options.json", 
-                                                                    weight_file="https://schweter.eu/cloud/eu-elmo/weights.hdf5")]),
-                DocumentPoolEmbeddings([ELMoEmbeddings()]))]
-    return elmo_emb
+def load_elmo_embeddings(ename):
+    return DocumentPoolEmbeddings([ELMoEmbeddings(ename)])
+
+def load_embeddings(lang, etype='word'):
+    ename = av_languages[lang][etype]
+    if etype == 'word':
+        return load_word_embeddings(ename)
+    if etype == 'flair':
+        return load_flair_embeddings(ename)
+    elif etype == 'elmo':
+        return load_elmo_embeddings(ename)
+    elif etype == 'bert':
+        return load_bert_embeddings(ename)
 
 
 def calculate_similarities(gold, sim_sentences, embeddings):
@@ -46,9 +66,12 @@ def calculate_similarities(gold, sim_sentences, embeddings):
     q = Sentence(gold)
     embeddings.embed(q)
     
-    for i in range(len(sim_sentences)):
-        
-        s = Sentence(sim_sentences[i])
+    for sent in sim_sentences:
+        # if sentence is empty (user didn't fill it)
+        if not sent:
+            continue
+    
+        s = Sentence(sent)
         embeddings.embed(s)
 
         assert q.embedding.shape == s.embedding.shape
@@ -56,48 +79,68 @@ def calculate_similarities(gold, sim_sentences, embeddings):
         cos = torch.nn.CosineSimilarity(dim=0, eps=1e-6)
         prox = cos(q.embedding, s.embedding)
         similarities.append(round(prox.item(), 4))
-        
     return similarities
+
+def sidebar():
+    st.sidebar.markdown('''This app lets you see the difference in the contextual embeddings from different sentences. You can experiment with a `gold` sentence and sentences similar to it, and check how similar contextual embeddings actually are.
+    \nI added a number of languages, classic word embeddings and I use [Flair](https://github.com/flairNLP/flair/blob/master/resources/docs/embeddings) for the contextual embeddings: `flair`, `ELMo` and `BERT`. 
+    If you would like to see another language or if there is a bug or error, feel free to open [an issue on the repo](https://github.com/anebz/eu-sim/issues).
+    \n### Info on contextualized embeddings
+    \nWord embeddings are mappings from a word to a vector of numbers, designed to capture its meaning. The idea is that synonyms have very similar embeddings, antonyms have opposite embedding and so on.
+    \nContextual embeddings obtain the word mapping based on its context, capturing uses of words across varied contexts and encoding knowledge that transfers across languages. 
+    \nTo obtain the embedding of the whole sentence, I use [DocumentEmbedding](https://github.com/flairNLP/flair/blob/master/resources/docs/TUTORIAL_5_DOCUMENT_EMBEDDINGS.md) from Flair to obtain a kind of average embedding of all the word embeddings in the sentence.
+    \nFor more info, check out the [slides](https://github.com/anebz/eu-sim/blob/master/prev_data/semantic_search.pdf) of the talk I gave on the topic.
+    \n### Findings
+    \nFollowing my intuition, I expected that 'opposite' sentences would have 'opposite' embeddings. For example, `A invites B` is linguistically opposite to `B invites A`, or `A doesn't invite B`. I expected to see some difference in the embeddings.
+    \nHowever, to my surprise all those sentences have very high embedding similarity. After doing the experiments, I concluded that this 'contrast' is very small compared to the fact that both sentences have many words in common, and this is what influences the embedding.
+    \nThese are other things I found after experimenting with the embeddings:
+    \n* As expected, word embeddings only capture individual words' meaning with no regard to context.
+    \n* Sentences with the same subject and object have very similar embeddings, regardless of the verb or other parts of the sentence.
+    \n* BERT embeddings don't seem to pay much attention to word order in the sentence, opposite to Flair and ELMo.
+    \n* BERT embeddings are in general very very similar to the gold sentence, even random sentences or sentences in other languages have a similarity of at least 70%. It is difficult to produce a sentence that produces a similarity of lower than 65%.
+    \n\nFor more experiments and findings, check out the slides mentioned above. Feel free to chat with me on [Twitter](https://twitter.com/aberasategi) about your experiments or findings! 😄
+    ''')
 
 
 if __name__ == "__main__":
 
-    st.title('Sentence embedding similarity comparisor')
-    option = st.selectbox('Choose language pair', ('Basque - English', 'Home phone', 'Mobile phone'))
-    lang1, lang2 = option.split('-')
+    st.title('Contextual embedding similarity comparisor')
+    sidebar()
 
-    # capture gold and similar sentences
-    example_sentences = ["The doctor invited the patient for lunch",
-                        "the surgeon invited the patient for lunch", 
-                        "the doctor invited the doctor for lunch",
-                        "the professor invited the patient for lunch",
-                        "the doctor invited the patient for a meal",
-                        "the doctor took the patient out for tea",
-                        "the doctor paid for the patient's lunch",
-                        "the park was empty at this time of night",
-                        "das ergibt doch keinen Sinn"]
-    gold_sent_en = st.text_input(f"Gold sentence in {lang2}", example_sentences[0])
-    st.subheader('Input similar sentences')
-    similar_sent_en = [st.text_input('', example) for example in example_sentences[1:]]
+    lang = st.selectbox('Select language', tuple(av_languages.keys()))
 
+    # translate similar sentences to the chosen language
+    if lang != 'English':
+        translator = google_translator()
+        example_sentences = [translator.translate(sim, lang_tgt=av_languages[lang]['word']) for sim in example_sentences]
 
-    embedding_names = ["flair", "bert_cased", "bert_uncased", "elmo"]
+    gold_sent_en = st.text_input(f"Write your main sentence in {lang}", example_sentences[0])
+    
+    st.write('Input similar sentences. Samples shown below')
+    st.info('For languages other than English, the translations have been generated automatically and might contain errors')
+    similar_sent_en = []
+    for i in range(1, len(example_sentences[1:]), 2):
+        # display sample sentences in double column format for better readability
+        cols = st.beta_columns(2)
+        similar_sent_en.append(cols[0].text_input('', example_sentences[i], key=i))
+        similar_sent_en.append(cols[1].text_input('', example_sentences[i+1], key=i))
 
-    # obtain similarity between gold and similar's embeddings
+    # display available embeddings in checkboxes
     st.subheader('Please choose at least one of the embeddings below')
-    cols = st.beta_columns(4)
-    flair = cols[0].checkbox("Flair")
-    bertc = cols[1].checkbox("BERT cased")
-    bertu = cols[2].checkbox("BERT uncased")
-    elmo = cols[3].checkbox("ELMo")
+    st.info('The first time it takes a while to load the embeddings')
+    cols = st.beta_columns(len(av_languages[lang]))
+    emb_boxes = [cols[i].checkbox(name) for i, name in enumerate(av_languages[lang])]
 
     if st.button('Run embedding comparison'):
-
-        if flair:
-            embeddings_all = load_flair_embeddings()
-
-        try:
-            data = [calculate_similarities(gold_sent_en, similar_sent_en, emb) for emb in embeddings_all[0]]
-            st.bar_chart(pd.DataFrame(data[0], columns=['flair']))
-        except:
-            st.write("Please select at least one embedding")
+        # check that the golden sentence isn't empty and that there is at least one similar sentence
+        if gold_sent_en and ''.join(similar_sent_en):
+            for name, box in zip(av_languages[lang], emb_boxes):
+                if box:
+                    st.write(name, 'embeddings')    
+                    # obtain similarity between gold and similar's embeddings
+                    similarities = calculate_similarities(gold_sent_en, similar_sent_en, load_embeddings(lang, name))
+                    st.bar_chart(pd.DataFrame(similarities))
+            else:
+                st.write("Please select at least one embedding")
+        else:
+            st.write("Please write the golden sentence and at least one similar sentence")
