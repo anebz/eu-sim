@@ -2,6 +2,8 @@
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/anebz/eu-sim/emb_similarity.py/)
 
+Exploring the similarity of contextual embeddings for similar sentences. [Talk slides](prev_data/semantic_search.pdf)
+
 This project supports the following languages. If you would like another, make an issue and I will add it :)
 
 > English, Spanish, Portuguese, Italian, French, German, Japanese, Chinese and Basque
