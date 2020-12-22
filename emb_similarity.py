@@ -21,15 +21,15 @@ av_languages = {'English': {'word':'glove', 'elmo':'', 'flair':'mix', 'bert':'be
                }
 
 # example gold and similar sentences
-example_sentences = ["The doctor invited the patient for lunch",
-                    "the surgeon invited the patient for lunch", 
-                    "the doctor invited the doctor for lunch",
-                    "the professor invited the patient for lunch",
-                    "the doctor invited the patient for a meal",
-                    "the doctor took the patient out for tea",
-                    "the doctor paid for the patient's lunch",
-                    "the park was empty at this time of night",
-                    "a complete random sentence with two cups of sugar"]
+example_sent = ["the doctor invited the patient for lunch",
+                "the surgeon invited the patient for lunch", 
+                "the doctor invited the doctor for lunch",
+                "the professor invited the patient for lunch",
+                "the doctor invited the patient for a meal",
+                "the doctor took the patient out for tea",
+                "the doctor paid for the patient's lunch",
+                "for patient the invited doctor lunch the",
+                "a random sentence with two drops of sugar"]
 
 
 @st.cache
@@ -108,7 +108,7 @@ def sidebar():
 
 def plot_data(similarities, checked_names):
     layout = go.Layout(xaxis=go.layout.XAxis(title=go.layout.xaxis.Title(text='Similar sentence indexes: [0-7]')),
-                       yaxis=go.layout.YAxis(title=go.layout.yaxis.Title(text='Embedding similarity')))
+                       yaxis=go.layout.YAxis(title=go.layout.yaxis.Title(text='Embedding type')))
     st.plotly_chart(go.Figure(data=go.Heatmap(z=similarities, y=checked_names, colorscale='Blues'), layout=layout))
     return
 
@@ -122,18 +122,18 @@ if __name__ == "__main__":
     # translate similar sentences to the chosen language
     if lang != 'English':
         translator = google_translator()
-        example_sentences = [translator.translate(sim, lang_tgt=av_languages[lang]['word']) for sim in example_sentences]
+        example_sent = [translator.translate(sim, lang_tgt=av_languages[lang]['word']) for sim in example_sent]
 
-    gold_sent_en = st.text_input(f"Write your main sentence in {lang}", example_sentences[0])
+    main_sent = st.text_input(f"Write your main sentence in {lang}", example_sent[0])
     
     st.write('Input similar sentences. Samples shown below')
     st.info('For languages other than English, the translations have been generated automatically and might contain errors')
-    similar_sent_en = []
-    for i in range(1, len(example_sentences[1:]), 2):
+    similar_sent = []
+    for i in range(1, len(example_sent[1:]), 2):
         # display sample sentences in double column format for better readability
         cols = st.beta_columns(2)
-        similar_sent_en.append(cols[0].text_input(f"Index {i-1}", example_sentences[i], key=i))
-        similar_sent_en.append(cols[1].text_input(f"Index {i}", example_sentences[i+1], key=i+1))
+        similar_sent.append(cols[0].text_input(f"Index {i-1}", example_sent[i], key=i))
+        similar_sent.append(cols[1].text_input(f"Index {i}", example_sent[i+1], key=i+1))
 
     # display available embeddings in checkboxes
     st.subheader('Please choose at least one of the embeddings below')
@@ -143,14 +143,14 @@ if __name__ == "__main__":
 
     if st.button('Run embedding comparison'):
         # check that the golden sentence isn't empty and that there is at least one similar sentence
-        if gold_sent_en and ''.join(similar_sent_en):
+        if main_sent and ''.join(similar_sent):
             similarities = []
             checked_names = []
             for name, box in zip(av_languages[lang], emb_boxes):
                 if box:
                     checked_names.append(name)
                     # obtain similarity between gold and similar's embeddings
-                    similarities.append(calculate_similarities(gold_sent_en, similar_sent_en, load_embeddings(lang, name)))
+                    similarities.append(calculate_similarities(main_sent, similar_sent, load_embeddings(lang, name)))
 
             if similarities:
                 plot_data(similarities, checked_names)

@@ -17,6 +17,3 @@ I'm using `Flair` which supports these types of embeddings:
 * [ELMo embeddings](https://github.com/flairNLP/flair/blob/master/resources/docs/embeddings/ELMO_EMBEDDINGS.md) (quite limited as of 2020.12)
 * [BERT embeddings](https://github.com/flairNLP/flair/blob/master/resources/docs/embeddings/TRANSFORMER_EMBEDDINGS.md) from these Huggingface 🤗 [pre-trained models](https://huggingface.co/transformers/pretrained_models.html)
 * [Document embeddings](https://github.com/flairNLP/flair/blob/master/resources/docs/TUTORIAL_5_DOCUMENT_EMBEDDINGS.md) to obtain the embedding of the whole document/sentence
-
-https://docs.streamlit.io/en/latest/api.html#streamlit.selectbox
-https://discuss.streamlit.io/t/best-way-to-let-users-select-options/1058
