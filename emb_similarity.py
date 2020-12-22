@@ -1,22 +1,23 @@
 import torch
 import pandas as pd
 import streamlit as st
+import plotly.graph_objs as go
 from google_trans_new import google_translator
 from flair.data import Sentence
 from flair.embeddings import DocumentPoolEmbeddings, TransformerDocumentEmbeddings
 from flair.embeddings import WordEmbeddings, FlairEmbeddings, ELMoEmbeddings
 
 # available languages and supported embedding names
-av_languages = {'English': {'word':'glove', 'flair':'mix', 'elmo':'', 'bert':'bert-base-uncased'},
+av_languages = {'English': {'word':'glove', 'elmo':'', 'flair':'mix', 'bert':'bert-base-uncased'},
                 'Spanish': {'word':'es', 'flair':'es', 'bert':'bert-base-multilingual-uncased'},
-                'Portuguese': {'word':'pt', 'flair':'pt', 'elmo':'pt', 'bert':'bert-base-multilingual-uncased'},
+                'Portuguese': {'word':'pt', 'elmo':'pt', 'flair':'pt', 'bert':'bert-base-multilingual-uncased'},
                 'Italian': {'word':'it', 'flair':'it', 'bert':'bert-base-multilingual-uncased'},
                 'French': {'word':'fr', 'flair':'fr', 'bert':'bert-base-multilingual-uncased'},
                 'German': {'word':'de', 'flair':'de', 'bert':'bert-base-german-dbmdz-uncased'},
                 'Japanese': {'word':'ja', 'flair':'ja', 'bert':'cl-tohoku/bert-base-japanese'},
                 'Chinese': {'word':'zh', 'bert':'bert-base-chinese'},
-                'Basque': {'word':'eu', 'flair':'eu', 'elmo':["https://schweter.eu/cloud/eu-elmo/options.json",
-                            "https://schweter.eu/cloud/eu-elmo/weights.hdf5"], 'bert':'bert-base-multilingual-uncased'}
+                'Basque': {'word':'eu', 'elmo':["https://schweter.eu/cloud/eu-elmo/options.json", 
+                           "https://schweter.eu/cloud/eu-elmo/weights.hdf5"], 'flair':'eu', 'bert':'bert-base-multilingual-uncased'}
                }
 
 # example gold and similar sentences
@@ -58,6 +59,8 @@ def load_embeddings(lang, etype='word'):
         return load_elmo_embeddings(ename)
     elif etype == 'bert':
         return load_bert_embeddings(ename)
+    else:
+        st.write('Error when loading embeddings Embedding type not recognized')
 
 
 def calculate_similarities(gold, sim_sentences, embeddings):
@@ -82,7 +85,7 @@ def calculate_similarities(gold, sim_sentences, embeddings):
     return similarities
 
 def sidebar():
-    st.sidebar.markdown('''This app lets you see the difference in the contextual embeddings from different sentences. You can experiment with a `gold` sentence and sentences similar to it, and check how similar contextual embeddings actually are.
+    st.sidebar.markdown('''This app lets you see the difference in the contextual embeddings from different sentences. You can experiment with a `main` sentence and sentences similar to it, and check how similar contextual embeddings actually are.
     \nI added a number of languages, classic word embeddings and I use [Flair](https://github.com/flairNLP/flair/blob/master/resources/docs/embeddings) for the contextual embeddings: `flair`, `ELMo` and `BERT`. 
     If you would like to see another language or if there is a bug or error, feel free to open [an issue on the repo](https://github.com/anebz/eu-sim/issues).
     \n### Info on contextualized embeddings
@@ -97,10 +100,17 @@ def sidebar():
     \n* As expected, word embeddings only capture individual words' meaning with no regard to context.
     \n* Sentences with the same subject and object have very similar embeddings, regardless of the verb or other parts of the sentence.
     \n* BERT embeddings don't seem to pay much attention to word order in the sentence, opposite to Flair and ELMo.
-    \n* BERT embeddings are in general very very similar to the gold sentence, even random sentences or sentences in other languages have a similarity of at least 70%. It is difficult to produce a sentence that produces a similarity of lower than 65%.
+    \n* BERT embeddings are in general very very similar to the main sentence, even random sentences or sentences in other languages have a similarity of at least 70%. It is difficult to produce a sentence that produces a similarity of lower than 65%.
     \n\nFor more experiments and findings, check out the slides mentioned above. Feel free to chat with me on [Twitter](https://twitter.com/aberasategi) about your experiments or findings! 😄
     ''')
+    return
 
+
+def plot_data(similarities, checked_names):
+    layout = go.Layout(xaxis=go.layout.XAxis(title=go.layout.xaxis.Title(text='Similar sentence indexes: [0-7]')),
+                       yaxis=go.layout.YAxis(title=go.layout.yaxis.Title(text='Embedding similarity')))
+    st.plotly_chart(go.Figure(data=go.Heatmap(z=similarities, y=checked_names, colorscale='Blues'), layout=layout))
+    return
 
 if __name__ == "__main__":
 
@@ -122,8 +132,8 @@ if __name__ == "__main__":
     for i in range(1, len(example_sentences[1:]), 2):
         # display sample sentences in double column format for better readability
         cols = st.beta_columns(2)
-        similar_sent_en.append(cols[0].text_input('', example_sentences[i], key=i))
-        similar_sent_en.append(cols[1].text_input('', example_sentences[i+1], key=i))
+        similar_sent_en.append(cols[0].text_input(f"Index {i-1}", example_sentences[i], key=i))
+        similar_sent_en.append(cols[1].text_input(f"Index {i}", example_sentences[i+1], key=i+1))
 
     # display available embeddings in checkboxes
     st.subheader('Please choose at least one of the embeddings below')
@@ -134,12 +144,16 @@ if __name__ == "__main__":
     if st.button('Run embedding comparison'):
         # check that the golden sentence isn't empty and that there is at least one similar sentence
         if gold_sent_en and ''.join(similar_sent_en):
+            similarities = []
+            checked_names = []
             for name, box in zip(av_languages[lang], emb_boxes):
                 if box:
-                    st.write(name, 'embeddings')    
+                    checked_names.append(name)
                     # obtain similarity between gold and similar's embeddings
-                    similarities = calculate_similarities(gold_sent_en, similar_sent_en, load_embeddings(lang, name))
-                    st.bar_chart(pd.DataFrame(similarities))
+                    similarities.append(calculate_similarities(gold_sent_en, similar_sent_en, load_embeddings(lang, name)))
+
+            if similarities:
+                plot_data(similarities, checked_names)
             else:
                 st.write("Please select at least one embedding")
         else:
