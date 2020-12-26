@@ -19,16 +19,16 @@ av_languages = {'English': {'word':'glove', 'elmo':'', 'flair':'mix', 'bert':'be
                            "https://schweter.eu/cloud/eu-elmo/weights.hdf5"], 'flair':'eu', 'bert':'bert-base-multilingual-uncased'}
                }
 
-# example gold and similar sentences
+# example of main and similar sentences
 example_sent = ["the doctor invited the patient for lunch",
-                "the surgeon invited the patient for lunch", 
-                "the doctor invited the doctor for lunch",
-                "the professor invited the patient for lunch",
+                "the doctor didn't invite the patient for lunch",
+                "the patient invited the doctor for lunch",
+                "the surgeon invited the patient for lunch",
                 "the doctor invited the patient for a meal",
-                "the doctor took the patient out for tea",
-                "the doctor paid for the patient's lunch",
+                "the doctor and the patient went our for tea",
                 "for patient the invited doctor lunch the",
-                "a random sentence with two drops of sugar"]
+                "a random sentence with two drops of sugar",
+                "esta frase está en otro idioma"]
 
 
 @st.cache
