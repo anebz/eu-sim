@@ -1,5 +1,4 @@
 import torch
-import pandas as pd
 import streamlit as st
 import plotly.graph_objs as go
 from google_trans_new import google_translator
@@ -117,7 +116,9 @@ if __name__ == "__main__":
     st.title('Contextual embedding similarity comparisor')
     sidebar()
 
-    lang = st.selectbox('Select language', tuple(av_languages.keys()))
+    st.info("Streamlit has some problems with apps bigger than around 1GB, so multilanguage feature is disabled for now.")
+    #lang = st.selectbox('Select language', tuple(av_languages.keys()))
+    lang = st.selectbox('Select language', ['English'])
 
     # translate similar sentences to the chosen language
     if lang != 'English':
