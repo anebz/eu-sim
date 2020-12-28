@@ -31,20 +31,20 @@ example_sent = ["the doctor invited the patient for lunch",
                 "esta frase está en otro idioma"]
 
 
-@st.cache
+#@st.cache
 def load_word_embeddings(ename):
     return DocumentPoolEmbeddings([WordEmbeddings(ename)])
 
-@st.cache
+#@st.cache
 def load_flair_embeddings(ename):
     return DocumentPoolEmbeddings([FlairEmbeddings(f'{ename}-forward'), FlairEmbeddings(f'{ename}-backward')])
 
-@st.cache
+#@st.cache
 def load_bert_embeddings(ename):
     # See BERT paper, section 5.3 and table 7 for layers
     return TransformerDocumentEmbeddings(ename, layers='-1,-2,-3,-4')
 
-@st.cache
+#@st.cache
 def load_elmo_embeddings(ename):
     return DocumentPoolEmbeddings([ELMoEmbeddings(ename)])
 
