@@ -138,9 +138,10 @@ if __name__ == "__main__":
 
     # display available embeddings in checkboxes
     st.subheader('Please choose at least one of the embeddings below')
-    st.info('The first time it takes a while to load the embeddings')
-    cols = st.beta_columns(len(av_languages[lang]))
-    emb_boxes = [cols[i].checkbox(name) for i, name in enumerate(av_languages[lang])]
+    st.info('The first time it takes a while to load the embeddings. Word embeddings temporarily disabled because of Streamlits storage capacity')
+    embedding_types = list(av_languages[lang])[1:]
+    cols = st.beta_columns(len(embedding_types))
+    emb_boxes = [cols[i].checkbox(name) for i, name in enumerate(embedding_types)]
 
     if st.button('Run embedding comparison'):
         # check that the golden sentence isn't empty and that there is at least one similar sentence
