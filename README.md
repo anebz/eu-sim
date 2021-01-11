@@ -1,6 +1,6 @@
 # eu-sim
 
-[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/anebz/eu-sim/emb_similarity.py/)
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://share.streamlit.io/anebz/eu-sim/similarity.py/)
 
 Exploring the similarity of contextual embeddings for similar sentences. [Talk slides](prev_data/semantic_search.pdf)
 
