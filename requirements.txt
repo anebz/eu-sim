@@ -4,5 +4,4 @@ google_trans_new
 plotly
 setuptools>=51.0.0
 streamlit
-transformers==3.5.0
-torch
+torch==1.4.0
