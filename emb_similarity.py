@@ -31,20 +31,16 @@ example_sent = ["the doctor invited the patient for lunch",
                 "esta frase está en otro idioma"]
 
 
-#@st.cache
 def load_word_embeddings(ename):
     return DocumentPoolEmbeddings([WordEmbeddings(ename)])
 
-#@st.cache
 def load_flair_embeddings(ename):
     return DocumentPoolEmbeddings([FlairEmbeddings(f'{ename}-forward'), FlairEmbeddings(f'{ename}-backward')])
 
-#@st.cache
 def load_bert_embeddings(ename):
     # See BERT paper, section 5.3 and table 7 for layers
     return TransformerDocumentEmbeddings(ename, layers='-1,-2,-3,-4')
 
-#@st.cache
 def load_elmo_embeddings(ename):
     return DocumentPoolEmbeddings([ELMoEmbeddings(ename)])
 
@@ -116,10 +112,7 @@ if __name__ == "__main__":
     st.title('Contextual embedding similarity comparisor')
     sidebar()
 
-    st.info("Streamlit has some problems with apps bigger than around 1GB, so multilanguage feature is disabled for now.")
-    #lang = st.selectbox('Select language', tuple(av_languages.keys()))
-    lang = st.selectbox('Select language', ['English'])
-
+    lang = st.selectbox('Select language', tuple(av_languages.keys()))
     # translate similar sentences to the chosen language
     if lang != 'English':
         translator = google_translator()
@@ -138,10 +131,9 @@ if __name__ == "__main__":
 
     # display available embeddings in checkboxes
     st.subheader('Please choose at least one of the embeddings below')
-    st.info('The first time it takes a while to load the embeddings. Word embeddings temporarily disabled because of Streamlits storage capacity')
-    embedding_types = list(av_languages[lang])[1:]
-    cols = st.beta_columns(len(embedding_types))
-    emb_boxes = [cols[i].checkbox(name) for i, name in enumerate(embedding_types)]
+    st.info('The first time it takes a while to load the embeddings')
+    cols = st.beta_columns(len(av_languages[lang]))
+    emb_boxes = [cols[i].checkbox(name) for i, name in enumerate(av_languages[lang])]
 
     if st.button('Run embedding comparison'):
         # check that the golden sentence isn't empty and that there is at least one similar sentence
